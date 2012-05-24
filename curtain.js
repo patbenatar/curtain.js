@@ -4,7 +4,9 @@
 * Version: 1.4.1
 * Copyright 2011, Victor Coulon (http://victorcoulon.fr)
 * Released under the MIT Licence
-* This fork has been modified and is maintained by Nick Giancola @patbenatar
+* ---
+* This fork has been modified and is maintained by Nick Giancola
+* Github: @patbenatar
 */
 
 (function ( $, window, document, undefined ) {
@@ -188,7 +190,7 @@
             if($('html, body').is(':animated')){
                 return false;
             }
-            console.log("here", direction);
+
             if(direction === 'up' || direction == 'down'){
 
                 // Keyboard event
@@ -208,7 +210,6 @@
                 }
 
                 if(position){
-                    console.log("position", position);
                     self.scrollEl.animate({
                         scrollTop:position
                     }, this.options.scrollSpeed, this.options.easing);
@@ -234,8 +235,6 @@
         },
         scrollEvent: function() {
             var self = this;
-
-            console.log("scrolling")
 
 
             var docTop = $(document).scrollTop(),
@@ -460,7 +459,6 @@
 
             if ("onhashchange" in window) {
                 window.addEventListener("hashchange", function(){
-                    console.log("ok");
                     if(self._ignoreHashChange === false){
                         self.isHashIsOnList(location.hash.substring(1));
                     }
