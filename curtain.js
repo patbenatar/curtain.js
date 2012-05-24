@@ -256,6 +256,8 @@
                     .nextAll().css({display:'none'}).end()
                     .prev().addClass('current').css({display:'block'});
 
+                $current.find(".content").css("top", "")
+
 
             } else if(docTop < (currentP + $current.height())){
                 // Animate the current pannel during the scroll
@@ -312,6 +314,8 @@
                 $current.removeClass('current')
                     .css({display:'none'})
                     .next().addClass('current').nextAll().css({display:'block'});
+
+                $current.next().find(".content").css("top", "")
             }
 
 
