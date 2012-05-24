@@ -1,9 +1,10 @@
 /*
 * Curtain.js - Create an unique page transitioning system
 * ---
-* Version: 1.4.2
+* Version: 1.4.1
 * Copyright 2011, Victor Coulon (http://victorcoulon.fr)
 * Released under the MIT Licence
+* This fork has been modified and is maintained by Nick Giancola @patbenatar
 */
 
 (function ( $, window, document, undefined ) {
@@ -11,6 +12,7 @@
     var pluginName = 'curtain',
         defaults = {
             scrollSpeed: 400,
+            dropInContent: false,
             bodyHeight: 0,
             linksArray: [],
             mobile: false,
@@ -68,7 +70,7 @@
                     self.$li.css({position:'relative'});
                     self.$element.find('.fixed').css({position:'absolute'});
                 }
-                
+
                 self.setLinks();
 
                 // Set dimensions after loading images (or not)
@@ -112,7 +114,6 @@
                 this.$li.css({position:'relative'});
                 this.$element.find('.fixed').css({position:'absolute'});
             }
-            
 
             if(this.options.mobile){
                this.scrollEl =  this.$element;
@@ -139,8 +140,6 @@
                     $(self.options.controls).css({position:'absolute'});
                 }
             }
-
-
 
             // We'll check if our images are loaded
             var images = [],
@@ -170,13 +169,6 @@
                 self.setDimensions();
                 self.$li.eq(0).addClass('current');
 
-                // Cache
-                self.$current = self.$element.find('.current');
-                self.$fixed = self.$current.find('.fixed');
-                self.$step = self.$current.find('.step');
-                self.currentP = parseInt(self.$current.attr('data-position'), 10);
-                self.currentHeight = parseInt(self.$current.attr('data-height'), 10);
-
                 if(!self.options.mobile){
                     if(self.$li.eq(1).length)
                         self.$li.eq(1).nextAll().css({display:'none'});
@@ -196,7 +188,7 @@
             if($('html, body').is(':animated')){
                 return false;
             }
-
+            console.log("here", direction);
             if(direction === 'up' || direction == 'down'){
 
                 // Keyboard event
@@ -216,6 +208,7 @@
                 }
 
                 if(position){
+                    console.log("position", position);
                     self.scrollEl.animate({
                         scrollTop:position
                     }, this.options.scrollSpeed, this.options.easing);
@@ -237,66 +230,74 @@
                     }, this.options.scrollSpeed, this.options.easing);
                 }
             }
-            
+
         },
         scrollEvent: function() {
-            var self = this,
-                docTop = $(document).scrollTop(),
+            var self = this;
+
+            console.log("scrolling")
+
+
+            var docTop = $(document).scrollTop(),
+                $current = self.$element.find('.current'),
+                $fixed = $current.find('.fixed'),
+                $step = $current.find('.step'),
+                currentP = parseInt($current.attr('data-position'), 10),
+                currentHeight = parseInt($current.attr('data-height'), 10),
                 windowHeight = $(window).height();
 
-
-            if(docTop < self.currentP && self.$current.index() > 0){
+            if(docTop < currentP && $current.index() > 0){
                 // Scroll top
                 self._ignoreHashChange = true;
-                if(self.$current.prev().attr('id'))
-                    self.setHash(self.$current.prev().attr('id'));
-                 
-       
-                self.$current.removeClass('current').css({marginTop: 0})
+                if($current.prev().attr('id'))
+                    self.setHash($current.prev().attr('id'));
+
+
+                $current.removeClass('current').css({marginTop: 0})
                     .nextAll().css({display:'none'}).end()
                     .prev().addClass('current').css({display:'block'});
-  
-                // Cache
-                self.$current = self.$element.find('.current');
-                self.$fixed = self.$current.find('.fixed');
-                self.$step = self.$current.find('.step');
-                self.currentP = parseInt(self.$current.attr('data-position'), 10);
-                self.currentHeight = parseInt(self.$current.attr('data-height'), 10);
 
-            } else if(docTop < (self.currentP + self.$current.height())){
+
+            } else if(docTop < (currentP + $current.height())){
                 // Animate the current pannel during the scroll
-                var position = -(docTop-self.currentP);
-                self.$current.css({marginTop:position});
+                var position = -(docTop-currentP);
+                $current.css({marginTop:position});
+
+                // Added by patbenatar:
+                // Slide in .content from top as we reveal slide
+                if (self.options.dropInContent) {
+                    $current.next().find(".content").css("top", position*.50*-1);
+                }
 
                 // If there is a fixed element in the current panel
-                if(self.$fixed.length){
-                    var dataTop = parseInt(self.$fixed.attr('data-top'), 10);
-                    
-                    if((docTop-self.currentP+windowHeight) >= self.currentHeight && self.$fixed.css('position') === 'fixed'){
-        
-                        self.$fixed.css({
-                            position: 'absolute',
-                            top: Math.abs(docTop-self.currentP + dataTop)
-                        });
-         
+                if($fixed.length){
+                    var dataTop = parseInt($fixed.attr('data-top'), 10);
+                    if((docTop-currentP+windowHeight) >= currentHeight && $fixed.css('position') === 'fixed'){
 
-                    } else if((docTop-self.currentP+windowHeight) <= self.currentHeight && self.$fixed.css('position') === 'absolute'){
-                        self.$fixed.css({
+
+                    $fixed.css({
+                        position: 'absolute',
+                        top: Math.abs(docTop-currentP + dataTop)
+                    });
+
+
+                    } else if((docTop-currentP+windowHeight) <= currentHeight && $fixed.css('position') === 'absolute'){
+                        $fixed.css({
                             position: 'fixed',
                             top: dataTop
                         });
                     }
 
-                    
+
                 }
 
-                
+
                 // If there is a step element in the current panel
-                if(self.$step.length){
-                    $.each(self.$step, function(i,el){
+                if($step.length){
+                    $.each($step, function(i,el){
                         if($(el).offset().top <= docTop+5 && ($(el).offset().top + $(el).outerHeight()) >= docTop+5){
                             if(!$(el).hasClass('current-step')){
-                                self.$step.removeClass('current-step');
+                                $step.removeClass('current-step');
                                 $(el).addClass('current-step');
                             }
                         }
@@ -306,19 +307,12 @@
             } else {
                 // Scroll bottom
                 self._ignoreHashChange = true;
-                if(self.$current.next().attr('id'))
-                    self.setHash(self.$current.next().attr('id'));
+                if($current.next().attr('id'))
+                    self.setHash($current.next().attr('id'));
 
-                self.$current.removeClass('current')
+                $current.removeClass('current')
                     .css({display:'none'})
                     .next().addClass('current').nextAll().css({display:'block'});
-
-                // Cache
-                self.$current = self.$element.find('.current');
-                self.$fixed = self.$current.find('.fixed');
-                self.$step = self.$current.find('.step');
-                self.currentP = parseInt(self.$current.attr('data-position'), 10);
-                self.currentHeight = parseInt(self.$current.attr('data-height'), 10);
             }
 
 
@@ -403,7 +397,7 @@
                     self.scrollEvent();
                 });
             }
-            
+
             if(self.options.enableKeys) {
                 $(document).on('keydown', function(e){
                     if(e.keyCode === 38 || e.keyCode === 37) {
@@ -450,7 +444,7 @@
                 $(self.options.curtainLinks).on('click', function(e){
                     e.preventDefault();
                     var href = $(this).attr('href');
-                    
+
                     if(!self.isHashIsOnList(href.substring(1)) && position)
                         return false;
 
@@ -466,6 +460,7 @@
 
             if ("onhashchange" in window) {
                 window.addEventListener("hashchange", function(){
+                    console.log("ok");
                     if(self._ignoreHashChange === false){
                         self.isHashIsOnList(location.hash.substring(1));
                     }
